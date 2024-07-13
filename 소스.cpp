@@ -2,6 +2,8 @@
 #include <thread>
 #include <iostream>
 #include <ws2tcpip.h>
+#include <sstream>
+#include <string>
 
 //strtok_s
 #include <cstring>
@@ -18,11 +20,15 @@ SOCKET soc;
 
 string realid;
 string coutid = "로그인을 해주세요.";
-int login_status = 0;
-string temp_id;
-string temp_password;
+
+//현재 아이디,비밀번호
 string newid;
 string newpassword;
+
+int login_status = 0;
+
+// 새로운 친구 추가 요청 있는지 확인
+bool new_friends_req = false;
 
 //채팅 하기 위한 코드
 void thr_recvs() {
@@ -72,6 +78,10 @@ void login() {
 		string sends = "1 ";
 		char buffer[PACKET_SIZE] = { 0 };
 		memset(&buffer, 0, sizeof(buffer));
+
+		//로그인용 임시 
+		string temp_id;
+		string temp_password;
 
 		cout << "아이디를 입력해주세요 : " ;
 		cin >> temp_id;
@@ -133,6 +143,7 @@ int main() {
 	}
 
 	while (1) {
+
 		int select;
 		cout << "======================" << endl;
 		cout << coutid << endl;
@@ -141,11 +152,12 @@ int main() {
 		cout << "===   2.  로그인   ===" << endl;
 		cout << "===   3. 채팅하기  ===" << endl;
 		cout << "===   4. 인벤토리  ===" << endl;
-		cout << "=5. 친구 확인 및 추가=" << endl;
-		cout << "===   6. 로그아웃  ===" << endl;
-		cout << "===   7.  나가기   ===" << endl;
+		cout << "===   5. 친구요청  ===" << endl;
+		cout << "===   6. 친구추가  ===" << endl;
+		cout << "===   7. 로그아웃  ===" << endl;
+		cout << "===   8.  나가기   ===" << endl;
 		cout << "======================" << endl;
-		cout << "======================" << endl;
+
 		//현재 접속중인 친구 수 확인
 		if (login_status) {
 
@@ -160,14 +172,37 @@ int main() {
 			send(soc,sendc , PACKET_SIZE, 0);
 			recv(soc,buffer,PACKET_SIZE,0);
 			cout << "현재 접속중인 친구 : " <<buffer<<endl;
+			cout << "======================" << endl;
 		}
-		else {
-			cout << "======================"<<endl;
-		}
-		cout << "======================" << endl;
-		cout << "======================" << endl;
-		cin >> select;
 
+		char buffer[PACKET_SIZE];
+		memset(buffer, 0, PACKET_SIZE);
+		string sends;
+		char* sendc = new char[sends.length() + 1];
+		sends += ("95 1 " + realid);
+		sendc[sends.length()] = '\n';
+		sends.copy(sendc, sends.length());
+
+		send(soc, sendc, PACKET_SIZE, 0);
+		recv(soc, buffer, PACKET_SIZE, 0);
+
+		string new_friend;
+		new_friend = buffer;
+		int new_friends_num = stoi(new_friend);
+
+		if (new_friends_num && login_status) {
+			cout << "친구추가 요청 " << new_friends_num <<"건이 있습니다." << endl;
+			cout << "======================" << endl;
+			new_friends_req = true;
+		}
+
+		// 0건이면 친추 요청 안보여줌 
+		else {
+			new_friends_req = false;
+		}
+
+		cout << endl;
+		cin >> select;
 		cout << endl;
 
 		switch (select) {
@@ -305,12 +340,64 @@ int main() {
 			break;
 		}
 
-		// 친구 추가 및 확인
+		//친구요청
 		case 5: {
+			while (1) {
+				int cnt = 1;
+				if (new_friends_req) {
+					string sends = "95 2 ";
+					sends += (realid);
+					char* sendc = new char[sends.length() + 1];
+					sendc[sends.length()] = '\n';
+					sends.copy(sendc, sends.length());
+					char buffer2[PACKET_SIZE] = { 0 };
+					memset(&buffer2, 0, sizeof(buffer2));
+					send(soc, sendc, strlen(sendc), 0);
+					recv(soc, buffer2, PACKET_SIZE, 0);
+
+					cout << "새로운 친구추가 요청" << endl << endl;
+					cout << "=======================" << endl;
+					//string으로 문자열 자르기
+					//buffer3에서 받은 목록 출력 (1, 한번에 ,로 구분해서 받아서 split, 2. 일단 친구 수 k면 k만큼 반복문 만들어서 그만큼 계속해서 recv받기)
+					string temp_rcv_friends_s = buffer2;
+					string temp_string;
+					char temp_rcv_friends_c = ' ';
+					stringstream ss(temp_rcv_friends_s);
+					
+					while (getline(ss, temp_string, ',')) {
+						cout << cnt++ << ". " << temp_string << "님이 친구추가 요청을 하였습니다." << endl;
+					}
+
+					cout << "=======================" << endl << endl;
+					cout << "친구 추가 하실 번호를 입력 후 엔터를 눌러주세요. (친구 추가는 한번에 한번씩 가능, 나가시려면 10101을 눌러주세요))" << endl;
+					cout << "친구 추가 할 번호 : ";
+				}
+				else {
+					cout << "새로운 친구 요청이 없습니다. 뒤로 가시려면 10101을 눌러주세요." << endl;;
+				}
+
+				string temp_friend_req;
+				cin >> temp_friend_req;
+
+				if (temp_friend_req == "10101")break;
+				else {
+					string sends = "94 ";
+					sends += (realid+" "+ temp_friend_req);
+					char* sendc = new char[sends.length() + 1];
+					sendc[sends.length()] = '\n';
+					sends.copy(sendc, sends.length());
+					send(soc, sendc, strlen(sendc), 0);
+				}
+			}
+			break;
+		}
+		// 친구 추가
+		case 6: {
 			if (!login_status) {
 				cout << "로그인을 먼저 해주세요" << endl << endl;
 				break;
 			}
+
 			//내 친구 목록 요청 보냄
 			string sends = "100 ";
 			sends += (realid);
@@ -322,15 +409,19 @@ int main() {
 			send(soc, sendc, strlen(sendc), 0);
 			recv(soc, buffer2, PACKET_SIZE, 0);
 
+			string want_chat;
+
+			//char로 문자열 자르기
 			//buffer2에서 받은 목록 출력 (1, 한번에 ,로 구분해서 받아서 split, 2. 일단 친구 수 k면 k만큼 반복문 만들어서 그만큼 계속해서 recv받기)
 			char* nulltext = NULL;
 			char* friends = strtok_s(buffer2, " ", &nulltext);
 			int cnt = 1;
-			string want_chat;
 
+			cout << "현재 접속중인 친구목록" << endl<< endl;
+			cout << "=======================" << endl;
 			while (friends != NULL) {
 				string tempchar;
-				cout << "현재 접속중인 친구목록" << endl << endl;
+
 				for (int i = 0; i < strlen(friends) - 1; i++) {
 					tempchar += friends[i];
 				}
@@ -342,54 +433,60 @@ int main() {
 				}
 				friends = strtok_s(NULL, " ", &nulltext);
 			}
-			string add_friends;
-			cout << endl;
-			cout << "친구 추가 하고 싶은 아이디를 입력 해 주세요.(뒤로 가시려면 10101을 눌러주세요) : ";
-			cin >> add_friends;
+			cout << "=======================" << endl << endl;
 
-			if (add_friends == "10101") break;
-			
-			else {
-				
-				string sends = "96 ";
-				sends += (realid+" ");
-				sends += add_friends;
-				memset(&buffer2, 0, sizeof(buffer2));
-				char* sendc2 = new char[sends.length() + 1];
-				sendc2[sends.length()] = '\n';
-				sends.copy(sendc2, sends.length());
-				send(soc, sendc2, PACKET_SIZE, 0);
-				recv(soc, buffer2, PACKET_SIZE, 0);
-				
-				//요청 친구 있음
-				if (buffer2 == "1") {
-					string sends = "96 ";
+			while (1) {
+				string add_friends;
+				cout << endl;
+				cout << "새롭게 친구 추가 하고 싶은 아이디를 입력 해 주세요.(뒤로 가시려면 10101을 눌러주세요) : ";
+				cin >> add_friends;
+
+				if (add_friends == "10101") break;
+
+				else {
+					string sends = "96 1 ";
 					sends += (realid + " ");
 					sends += add_friends;
+					memset(&buffer2, 0, sizeof(buffer2));
 					char* sendc2 = new char[sends.length() + 1];
 					sendc2[sends.length()] = '\n';
 					sends.copy(sendc2, sends.length());
 					send(soc, sendc2, PACKET_SIZE, 0);
+					recv(soc, buffer2, PACKET_SIZE, 0);
+					string rcv_temp = buffer2;
+					//요청 친구 있음
+					if (rcv_temp == "1") {
 
-					cout << add_friends <<"님에게 친구추가 요청을 보냈습니다." << endl;
-					
-				}
-				//요청 친구 없음
-				else {
-					cout << add_friends << "님은 없는 유저입니다. 다시 입력해주세요" << endl;
+						//친구신청
+						string sends = "96 2 ";
+						sends += (realid + " ");
+						sends += add_friends;
+						char* sendc2 = new char[sends.length() + 1];
+						sendc2[sends.length()] = '\n';
+						sends.copy(sendc2, sends.length());
+						send(soc, sendc2, PACKET_SIZE, 0);
+
+						cout << add_friends << "님에게 친구추가 요청을 보냈습니다." << endl;
+
+					}
+					//요청 친구 없음
+					else {
+						cout << add_friends << "님은 없는 유저입니다. 다시 입력해주세요" << endl;
+					}
 				}
 			}
-
+			cout << endl;
 			break;
 		}
 		
 			  // 로그아웃
-		case 6: {
+		case 7: {
 
 			if (!login_status) {
 				cout << "로그인 상태가 아닙니다." << endl << endl;
 				break;
 			}
+			new_friends_req = false;
 
 			string sends="101 ";
 			sends += realid;
@@ -404,12 +501,12 @@ int main() {
 			break;
 		}
 			  // 나가기
-		case 7: {
+		case 8: {
 			cout << "다음에 또 만나요" << endl;
+			new_friends_req = false;
 
 			//로그인 상태면 로그아웃메시지 보내주기
 			if (login_status) {
-
 				string sends;
 				sends += (101 + " ");
 				sends += (realid);
@@ -432,7 +529,7 @@ int main() {
 
 
 		}
-
+		
 			  //다시 메인 화면으로 돌아감
 			  continue;
 		}
