@@ -32,7 +32,7 @@ extern bool new_friends_req;
 
 
 //채팅 하기 위한 코드
-void thr_recvs() {
+void thr_recvs_whisper() {
 	char buffer[PACKET_SIZE] = { 0 };
 	string temp;
 	while (!WSAGetLastError()) {
