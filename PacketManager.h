@@ -14,7 +14,8 @@ public:
 	USER_STATE login(SOCKET soc_, USER_STATE UserState_);
 
 private:
-	std::mutex dLock;
 
+	std::unordered_map<UINT32, FriendInfo*> Friends;
+	std::mutex dLock;
 	std::deque<char*> RecvPacket;
 };

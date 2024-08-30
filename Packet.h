@@ -1,15 +1,7 @@
 #pragma once
-
+#include "Define.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
-struct PacketInfo
-{
-	UINT32 ClientIndex = 0;
-	UINT16 PacketId = 0;
-	UINT16 DataSize = 0;
-	char* pDataPtr = nullptr;
-};
 
 struct PACKET_HEADER
 {
@@ -27,6 +19,7 @@ struct LOGIN_REQUEST_PACKET : public PACKET_HEADER
 {
 	char UserID[MAX_USER_ID_LEN + 1];
 	char UserPW[MAX_USER_PW_LEN + 1];
+
 };
 
 const size_t LOGIN_REQUEST_PACKET_SIZE = sizeof(LOGIN_REQUEST_PACKET);
@@ -54,7 +47,7 @@ struct FIND_FRIENDS_REQUEST : public PACKET_HEADER
 
 struct FIND_FRIENDS_RESPONSE : public PACKET_HEADER
 {
-	char* FriendsInfo = nullptr;
+	FriendInfo* friendInfo;
 };
 
 struct FRIEND_REQUEST_REQUEST : public PACKET_HEADER

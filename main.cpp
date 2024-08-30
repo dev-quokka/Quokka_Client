@@ -2,6 +2,7 @@
 
 #include "Define.h"
 #include "PacketManager.h"
+
 // 파티 채팅 쓰레드, 친구쪽 쓰레드, 파티쪽 쓰레드, 귓속말 쓰레드
 
 /*로그인 하면 서버에서 부여받는 번호
@@ -20,13 +21,15 @@ USER_STATE UserState = USER_STATE::NONE;
 	 WSADATA wsa;
 	 WSAStartup(MAKEWORD(2, 2), &wsa);
 
-	 soc = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+	 soc = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	 SOCKADDR_IN addr;
 	 ZeroMemory(&addr,sizeof(addr));
 	 addr.sin_family = AF_INET;
 	 addr.sin_port = htons(9000);
 	 inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr.s_addr);
+
+	 std::cout << "서버 연결중" << std::endl;
 
 	 while (1) {
 		 if (!connect(soc, (SOCKADDR*)&addr, sizeof(addr))) {
