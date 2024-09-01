@@ -1,46 +1,46 @@
-#pragma once
-
-//strtok_s
-#include <cstring>
-#include "Define.h"
-#define PACKET_SIZE 1024
-
-#pragma comment(lib, "ws2_32.lib") //비주얼에서 소켓프로그래밍 하기 위한 것
-using namespace std;
-
-extern SOCKET soc;
-
-/*로그인 하면 서버에서 부여받는 번호
-	unsigned int login_number;*/
-
-extern string realid;
-extern string coutid;
-
-//현재 아이디,비밀번호
-extern string newid;
-extern string newpassword;
-
-extern int login_status;
-
-// 새로운 친구 추가 요청 있는지 확인
-extern bool new_friends_req;
-
-// 전체 채팅 수신
-void thr_recvs_party() {
-	while (!WSAGetLastError()) {
-		char buffer[PACKET_SIZE] = { 0 };
-		recv(soc, buffer, PACKET_SIZE, 0);
-		string temp;
-		temp = buffer;
-		if (temp == "10101") {
-			cout << endl;
-			cout << "서버가 연결을 종료 하였습니다. 나가시려면 10101을 입력해주세요" << endl;
-			break;
-		}
-		cout << "받은 메세지 : " << buffer << endl;
-	}
-	
-}
+//#pragma once
+//
+////strtok_s
+//#include <cstring>
+//#include "Define.h"
+//#define PACKET_SIZE 1024
+//
+//#pragma comment(lib, "ws2_32.lib") //비주얼에서 소켓프로그래밍 하기 위한 것
+//using namespace std;
+//
+//extern SOCKET soc;
+//
+///*로그인 하면 서버에서 부여받는 번호
+//	unsigned int login_number;*/
+//
+//extern string realid;
+//extern string coutid;
+//
+////현재 아이디,비밀번호
+//extern string newid;
+//extern string newpassword;
+//
+//extern int login_status;
+//
+//// 새로운 친구 추가 요청 있는지 확인
+//extern bool new_friends_req;
+//
+//// 전체 채팅 수신
+//void thr_recvs_party() {
+//	while (!WSAGetLastError()) {
+//		char buffer[PACKET_SIZE] = { 0 };
+//		recv(soc, buffer, PACKET_SIZE, 0);
+//		string temp;
+//		temp = buffer;
+//		if (temp == "10101") {
+//			cout << endl;
+//			cout << "서버가 연결을 종료 하였습니다. 나가시려면 10101을 입력해주세요" << endl;
+//			break;
+//		}
+//		cout << "받은 메세지 : " << buffer << endl;
+//	}
+//	
+//}
 
 
 

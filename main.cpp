@@ -2,7 +2,6 @@
 
 #include "Define.h"
 #include "PacketManager.h"
-
 // 파티 채팅 쓰레드, 친구쪽 쓰레드, 파티쪽 쓰레드, 귓속말 쓰레드
 
 /*로그인 하면 서버에서 부여받는 번호
@@ -12,9 +11,9 @@ std::string realid;
 
 SOCKET soc;
 
-PacketManager* packetManager;
-
 USER_STATE UserState = USER_STATE::NONE;
+
+int friendCnt = 0;
 
  int main() {
 
@@ -36,9 +35,7 @@ USER_STATE UserState = USER_STATE::NONE;
 			 std::cout << "서버와 연결완료" << std::endl << std::endl;
 			 break;
 		 }
-		 packetManager = new PacketManager;
 	 }
-
 
 	/* GUID guid = WSAID_CONNECTEX;
 	 LPFN_CONNECTEX g_connect;
@@ -155,7 +152,20 @@ USER_STATE UserState = USER_STATE::NONE;
 		case 1: {
 			//로그인 아직 안된 상태
 			if (UserState == USER_STATE::NONE) {
-				UserState = packetManager->login(soc, UserState);
+				UINT32 temp = login(soc);
+				if (temp < 31) {
+					friendCnt = temp;
+					getFriendsFServer(soc,friendCnt);
+					UserState = USER_STATE::LOGIN;
+				}
+				else if (temp == 31) {
+					UserState = USER_STATE::NONE;
+					std::cout << "서버에 유저 가득참" << std::endl;
+				}
+				else if (temp==35) {
+					UserState = USER_STATE::NONE;
+					std::cout << "로그인 실패" << std::endl;
+				}
 			}
 			//로그인 된 상태
 			else {
@@ -378,67 +388,72 @@ USER_STATE UserState = USER_STATE::NONE;
 				std::cout << "로그인을 먼저 해주세요" << std::endl << std::endl;
 			}
 
-			else {
-				while (1) {
-					int cnt = 1;
+			else if (UserState == USER_STATE::LOGIN) {
 
-					if (UserState == USER_STATE::NONE) {
-						std::string sends = "95 2 ";
-						sends += (realid);
-						char* sendc = new char[sends.length() + 1];
-						sendc[sends.length()] = '\n';
-						sends.copy(sendc, sends.length());
-						char buffer2[PACKET_SIZE] = { 0 };
-						memset(&buffer2, 0, sizeof(buffer2));
-						send(soc, sendc, strlen(sendc), 0);
-						recv(soc, buffer2, PACKET_SIZE, 0);
-
-						std::cout << "새로운 친구추가 요청" << std::endl << std::endl;
-						std::cout << "=======================" << std::endl;
-						//std::string으로 문자열 자르기
-						//buffer3에서 받은 목록 출력 (1, 한번에 ,로 구분해서 받아서 split, 2. 일단 친구 수 k면 k만큼 반복문 만들어서 그만큼 계속해서 recv받기)
-						std::string temp_rcv_friends_s = buffer2;
-						std::string temp_string;
-						char temp_rcv_friends_c = ' ';
-						std::stringstream ss(temp_rcv_friends_s);
-
-						while (getline(ss, temp_string, ',')) {
-							std::cout << cnt++ << ". " << temp_string << "님이 친구추가 요청을 하였습니다." << std::endl;
-						}
-
-						std::cout << "=======================" << std::endl << std::endl;
-						std::cout << "친구 추가 하실 번호를 입력 후 엔터를 눌러주세요. (친구 추가는 한번에 한번씩 가능, 나가시려면 10101을 눌러주세요))" << std::endl;
-						std::cout << "친구 추가 할 번호 : ";
-					}
-
-					else {
-						std::cout << "새로운 친구 요청이 없습니다. 뒤로 가시려면 10101을 눌러주세요." << std::endl;
-					}
-
-					std::string temp_friend_req;
-					std::cin >> temp_friend_req;
-
-					int temp_friend_req_s = stoi(temp_friend_req);
-					//입력한 수가 위 cnt 범위 안에 있을 때
-					if (temp_friend_req == "10101") break;
-
-					if (temp_friend_req_s <= cnt && temp_friend_req_s > 0) {
-
-						std::string sends = "94 ";
-						sends += (realid + " " + temp_friend_req);
-						char* sendc = new char[sends.length() + 1];
-						sendc[sends.length()] = '\n';
-						sends.copy(sendc, sends.length());
-						send(soc, sendc, strlen(sendc), 0);
-
-					}
-
-					//입력한 수가 위에 적힌 수보다 많거나 적을 때
-					else {
-						std::cout << "위에 적힌 번호 중에서 입력해 주세요" << std::endl << std::endl;
-					}
-
+				for (int i = 0; i < Friendsv.size(); i++) {
+					std::cout << "친구"<< i+1 <<" 아이디는 : "<< Friendsv[i].id << std::endl;
 				}
+				
+				//while (1) {
+				//	int cnt = 1;
+
+				//	if (UserState == USER_STATE::NONE) {
+				//		std::string sends = "95 2 ";
+				//		sends += (realid);
+				//		char* sendc = new char[sends.length() + 1];
+				//		sendc[sends.length()] = '\n';
+				//		sends.copy(sendc, sends.length());
+				//		char buffer2[PACKET_SIZE] = { 0 };
+				//		memset(&buffer2, 0, sizeof(buffer2));
+				//		send(soc, sendc, strlen(sendc), 0);
+				//		recv(soc, buffer2, PACKET_SIZE, 0);
+
+				//		std::cout << "새로운 친구추가 요청" << std::endl << std::endl;
+				//		std::cout << "=======================" << std::endl;
+				//		//std::string으로 문자열 자르기
+				//		//buffer3에서 받은 목록 출력 (1, 한번에 ,로 구분해서 받아서 split, 2. 일단 친구 수 k면 k만큼 반복문 만들어서 그만큼 계속해서 recv받기)
+				//		std::string temp_rcv_friends_s = buffer2;
+				//		std::string temp_string;
+				//		char temp_rcv_friends_c = ' ';
+				//		std::stringstream ss(temp_rcv_friends_s);
+
+				//		while (getline(ss, temp_string, ',')) {
+				//			std::cout << cnt++ << ". " << temp_string << "님이 친구추가 요청을 하였습니다." << std::endl;
+				//		}
+
+				//		std::cout << "=======================" << std::endl << std::endl;
+				//		std::cout << "친구 추가 하실 번호를 입력 후 엔터를 눌러주세요. (친구 추가는 한번에 한번씩 가능, 나가시려면 10101을 눌러주세요))" << std::endl;
+				//		std::cout << "친구 추가 할 번호 : ";
+				//	}
+
+				//	else {
+				//		std::cout << "새로운 친구 요청이 없습니다. 뒤로 가시려면 10101을 눌러주세요." << std::endl;
+				//	}
+
+				//	std::string temp_friend_req;
+				//	std::cin >> temp_friend_req;
+
+				//	int temp_friend_req_s = stoi(temp_friend_req);
+				//	//입력한 수가 위 cnt 범위 안에 있을 때
+				//	if (temp_friend_req == "10101") break;
+
+				//	if (temp_friend_req_s <= cnt && temp_friend_req_s > 0) {
+
+				//		std::string sends = "94 ";
+				//		sends += (realid + " " + temp_friend_req);
+				//		char* sendc = new char[sends.length() + 1];
+				//		sendc[sends.length()] = '\n';
+				//		sends.copy(sendc, sends.length());
+				//		send(soc, sendc, strlen(sendc), 0);
+
+				//	}
+
+				//	//입력한 수가 위에 적힌 수보다 많거나 적을 때
+				//	else {
+				//		std::cout << "위에 적힌 번호 중에서 입력해 주세요" << std::endl << std::endl;
+				//	}
+
+				//}
 			}
 
 			break;
